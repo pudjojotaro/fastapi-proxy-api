@@ -16,16 +16,30 @@ A lightweight FastAPI application to manage proxies locally. Users can add, test
 
 ### 1. **Clone the Repository**
 
+```bash
+git clone https://github.com/pudjojotaro/fastapi-proxy-api.git
+cd fastapi-proxy-api
 ```
 
 ### 2. **Set Up Virtual Environment**
 
 It's recommended to use a virtual environment to manage dependencies.
 
+```bash
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+# On macOS/Linux:
+source venv/bin/activate
+# On Windows:
+.\venv\Scripts\activate
 ```
 
 ### 3. **Install Dependencies**
 
+```bash
+pip install -r requirements.txt
 ```
 
 ### 4. **Prepare `proxies.txt`**
