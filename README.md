@@ -358,49 +358,7 @@ For local deployments, securing the API with HTTPS enhances security, especially
 - **Environment Variables:**
   Store sensitive information, like API keys, in environment variables or secure configuration files, not in the codebase.
 
-## 📌 **Quick Reference Commands**
 
-For quick access, here's a condensed list of all necessary commands:
-
-```bash
-# Navigate to your project directory
-cd path/to/fastapi-proxy-api
-
-# Initialize Git repository
-git init
-
-# Add all files to staging
-git add .
-
-# Commit the staged files
-git commit -m "Initial commit"
-
-# Authenticate GitHub CLI (if not already done)
-gh auth login
-
-# Create a new GitHub repository and push local commits using GitHub CLI
-gh repo create fastapi-proxy-api --public --source=. --push
-
-# Alternatively, if you created the repo manually on GitHub:
-# Add GitHub repository as remote
-git remote add origin https://github.com/pudjojotaro/fastapi-proxy-api.git
-
-# Rename current branch to main
-git branch -M main
-
-# Push commits to GitHub
-git push -u origin main
-
-# Add .gitignore and commit
-git add .gitignore
-git commit -m "Add .gitignore"
-git push
-
-# Add README.md and commit
-git add README.md
-git commit -m "Add README.md"
-git push
-```
 
 ## 🔗 **Helpful Resources**
 
@@ -410,11 +368,3 @@ git push
 - [GitHub Docs: Managing Remote Repositories](https://docs.github.com/en/github/using-git/managing-remote-repositories)
 - [Docker Installation Guide](https://docs.docker.com/get-docker/)
 
-## 🎉 **Congratulations!**
-
-You've successfully set up your FastAPI Proxy API, initialized Git, and published your project to GitHub. Your application is now version-controlled and ready for collaboration or personal use.
-
-If you encounter any issues or need further assistance, feel free to reach out!
-
----
-*Happy Coding!*
