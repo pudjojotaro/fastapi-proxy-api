@@ -145,8 +145,18 @@ proxies = proxy_api.get_proxies(count=3)
 proxy_ids = [p["id"] for p in proxies["proxies"]]
 
 # Use proxies...
+for proxy in proxies["proxies"]:
+    print(f"Using Proxy: {proxy['protocol']}://{proxy.get('username', '')}:{proxy.get('password', '')}@{proxy['ip']}:{proxy['port']}")
+    # Example usage with requests
+    response = requests.get("https://example.com", proxies={
+        "http": proxy["proxy"],
+        "https": proxy["proxy"]
+    })
+    print(f"Response from {proxy['ip']}: {response.status_code}")
 
-# Unlock
+# Unlock the proxies when done
+proxy_api.unlock_proxies(proxy_ids)
+print(f"Unlocked proxies with IDs: {proxy_ids}")
 ```
 
 ### Error Handling
