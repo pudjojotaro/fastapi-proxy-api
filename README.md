@@ -68,6 +68,8 @@ https://192.168.1.101:8081
 ```bash
 # Start the API server
 python main.py
+# Or start in a new terminal window
+start cmd /k "uvicorn main:app --host 0.0.0.0 --port 8000"
 ```
 
 ## 💻 **Usage Examples**
