@@ -98,7 +98,7 @@ proxy_api = ProxyAPI(
 )
 
 # Get a single proxy
-proxy = api.get_proxies(count=1)
+proxy = proxy_api.get_proxies(count=1)
 print(proxy["proxies"][0]["proxy"])
 # Output: http://user:pass@192.168.1.100:8080
 
@@ -110,10 +110,21 @@ response = requests.get("https://example.com", proxies={
 })
 ```
 
-2. **Adding and Testing Proxies**
+2. **Retrieving All Available Proxies**
+```python
+# Get all available proxies
+available_proxies = proxy_api.get_all_available_proxies()
+if available_proxies:
+    for proxy in available_proxies:
+        print(f"Available Proxy: {proxy['protocol']}://{proxy.get('username', '')}:{proxy.get('password', '')}@{proxy['ip']}:{proxy['port']}")
+else:
+    print("No available proxies found.")
+```
+
+3. **Adding and Testing Proxies**
 ```python
 # Add a new proxy
-api.add_proxy(
+proxy_api.add_proxy(
     protocol="http",
     ip="192.168.1.100",
     port=8080,
@@ -122,21 +133,20 @@ api.add_proxy(
 )
 
 # Test a specific proxy
-test_result = api.test_proxy(1)
+test_result = proxy_api.test_proxy(1)
 print(test_result["message"])
 # Output: "Proxy is working" or "Proxy failed"
 ```
 
-3. **Managing Proxy Locks**
+4. **Managing Proxy Locks**
 ```python
 # Get multiple proxies
-proxies = api.get_proxies(count=3)
+proxies = proxy_api.get_proxies(count=3)
 proxy_ids = [p["id"] for p in proxies["proxies"]]
 
 # Use proxies...
 
-# Unlock when done
-api.unlock_proxies(proxy_ids)
+# Unlock
 ```
 
 ### Error Handling
@@ -145,7 +155,7 @@ The API includes comprehensive error handling:
 
 ```python
 try:
-    proxies = api.get_proxies(count=5)
+    proxies = proxy_api.get_proxies(count=5)
 except requests.exceptions.HTTPError as e:
     if e.response.status_code == 404:
         print("No available proxies")
