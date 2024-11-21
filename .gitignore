@@ -17,3 +17,7 @@ proxies.db
 
 # macOS specific
 .DS_Store
+
+proxies.txt
+
+.gitignore

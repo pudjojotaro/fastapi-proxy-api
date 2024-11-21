@@ -1,6 +1,5 @@
+requests
 fastapi
 uvicorn
-requests
 python-dotenv
 typer
-auto-py-to-exe

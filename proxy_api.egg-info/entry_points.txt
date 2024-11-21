@@ -1,0 +1,2 @@
+[console_scripts]
+proxy-cli = proxy_cli:app

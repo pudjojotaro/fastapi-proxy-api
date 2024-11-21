@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from fastapi.security.api_key import APIKeyHeader
 from typing import Optional, List
 from datetime import datetime
@@ -6,6 +6,11 @@ import asyncio
 import sqlite3
 import logging
 import os
+from dotenv import load_dotenv
+from proxy_api.api import ProxyAPI
+from proxy_api.proxy_converter import init_db, convert_proxies  # Adjust the import based on your function name
+
+load_dotenv()  # Load environment variables from .env file
 
 # Initialize logging
 logging.basicConfig(
@@ -16,9 +21,11 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 db_path = "proxies.db"
+api = ProxyAPI()
 
 # API Key for local security (optional)
 API_KEY = os.getenv("API_KEY", "your-default-api-key")
+print(f"Loaded API Key: {API_KEY}")
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 async def verify_api_key(api_key: str = Depends(api_key_header)):
@@ -45,10 +52,35 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Function to unlock all proxies
+def unlock_all_proxies():
+    proxy_ids = get_all_proxy_ids()  # Fetch all proxy IDs directly
+    if proxy_ids:
+        for proxy_id in proxy_ids:
+            update_proxy_status(proxy_id, "available")  # Update status to 'available'
+        logger.info(f"Unlocked all proxies: {proxy_ids}")
+    else:
+        logger.info("No proxies to unlock.")
+
+# FastAPI lifespan event
 @app.on_event("startup")
 async def startup_event():
-    init_db()
-    asyncio.create_task(check_proxies())
+    init_db()  # Initialize the database
+    convert_proxies()  # Run the proxy converter to load proxies
+    unlock_all_proxies()  # Directly unlock all proxies when the app starts
+
+# FastAPI shutdown event
+@app.on_event("shutdown")
+async def shutdown_event():
+    unlock_all_proxies()  # Unlock all proxies when the app is shutting down
+
+def get_all_proxy_ids():
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM proxies")
+    proxy_ids = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return proxy_ids
 
 # Add a new proxy (individual)
 @app.post("/add_proxy", dependencies=[Depends(verify_api_key)])
@@ -155,6 +187,7 @@ def get_proxies(count: int = 1, format: str = "http://{username}:{password}@{ip}
 # Unlock proxies by IDs
 @app.post("/unlock_proxies", dependencies=[Depends(verify_api_key)])
 def unlock_proxies(proxies: List[int]):
+    print(f"Received proxies to unlock: {proxies}")  # Debugging line
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     for proxy_id in proxies:
@@ -203,4 +236,4 @@ async def check_proxies():
                 update_proxy_status(proxy_id, "inactive")
                 logger.warning(f"Background check: Proxy {proxy_id} failed: {e}")
         
-        await asyncio.sleep(300)  # Run every 5 minutes
+        await asyncio.sleep(3600)  # Run every 1 hour
