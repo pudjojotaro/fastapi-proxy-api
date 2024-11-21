@@ -8,7 +8,7 @@ import logging
 import os
 from dotenv import load_dotenv
 from proxy_api.api import ProxyAPI
-from proxy_api.proxy_converter import init_db, convert_proxies  # Adjust the import based on your function name
+from proxy_api.proxy_converter import init_db, convert_proxies
 
 load_dotenv()  # Load environment variables from .env file
 
