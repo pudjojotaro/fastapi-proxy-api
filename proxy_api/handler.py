@@ -237,3 +237,37 @@ async def check_proxies():
                 logger.warning(f"Background check: Proxy {proxy_id} failed: {e}")
         
         await asyncio.sleep(3600)  # Run every 1 hour
+
+# Function to get all available proxies
+def get_all_available_proxies():
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM proxies WHERE status = 'available'")
+    available_proxies = cursor.fetchall()
+    conn.close()
+    return available_proxies
+
+# New endpoint to retrieve all available proxies
+@app.get("/available_proxies", response_model=List[dict])
+def available_proxies():
+    proxies = get_all_available_proxies()
+    if not proxies:
+        raise HTTPException(status_code=404, detail="No available proxies found.")
+    
+    # Format the response
+    formatted_proxies = [
+        {
+            "id": proxy[0],
+            "protocol": proxy[1],
+            "username": proxy[2],
+            "password": proxy[3],
+            "ip": proxy[4],
+            "port": proxy[5],
+            "status": proxy[6],
+            "last_tested": proxy[7],
+            "fail_count": proxy[8]
+        }
+        for proxy in proxies
+    ]
+    
+    return formatted_proxies
