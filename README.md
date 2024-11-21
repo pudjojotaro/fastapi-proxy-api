@@ -72,7 +72,92 @@ python main.py
 start cmd /k "uvicorn main:app --host 0.0.0.0 --port 8000"
 ```
 
-## 💻 **Usage Examples**
+## 🔌 **Integration with Other Projects**
+
+### Local Development Installation
+
+You can install this package directly from your local copy for development:
+
+```bash
+# From your other project's directory
+pip install -e path/to/fastapi-proxy-api
+
+# Example
+pip install -e ../fastapi-proxy-api
+```
+
+### Example Usage Scenarios
+
+1. **Basic Proxy Retrieval**
+```python
+from proxy_api import ProxyAPI
+
+proxy_api = ProxyAPI(
+    api_key="your-secure-api-key",  # Optional: defaults to environment variable
+    base_url="http://localhost:8000"  # Optional: defaults to this value
+)
+
+# Get a single proxy
+proxy = api.get_proxies(count=1)
+print(proxy["proxies"][0]["proxy"])
+# Output: http://user:pass@192.168.1.100:8080
+
+# Use the proxy
+import requests
+response = requests.get("https://example.com", proxies={
+    "http": proxy["proxies"][0]["proxy"],
+    "https": proxy["proxies"][0]["proxy"]
+})
+```
+
+2. **Adding and Testing Proxies**
+```python
+# Add a new proxy
+api.add_proxy(
+    protocol="http",
+    ip="192.168.1.100",
+    port=8080,
+    username="user",
+    password="pass"
+)
+
+# Test a specific proxy
+test_result = api.test_proxy(1)
+print(test_result["message"])
+# Output: "Proxy is working" or "Proxy failed"
+```
+
+3. **Managing Proxy Locks**
+```python
+# Get multiple proxies
+proxies = api.get_proxies(count=3)
+proxy_ids = [p["id"] for p in proxies["proxies"]]
+
+# Use proxies...
+
+# Unlock when done
+api.unlock_proxies(proxy_ids)
+```
+
+### Error Handling
+
+The API includes comprehensive error handling:
+
+```python
+try:
+    proxies = api.get_proxies(count=5)
+except requests.exceptions.HTTPError as e:
+    if e.response.status_code == 404:
+        print("No available proxies")
+    elif e.response.status_code == 403:
+        print("Invalid API key")
+    else:
+        print(f"HTTP Error: {e}")
+except requests.exceptions.RequestException as e:
+    print(f"Connection error: {e}")
+```
+
+## 💻 **CLI Usage Examples**
 
 ### Using the CLI
 
@@ -95,27 +180,9 @@ proxy-cli unlock "1,2,3"
 proxy-cli start
 ```
 
-### Using the API
 
-1. **Add a Proxy**
-```bash
-curl -X POST "http://localhost:8000/add_proxy" \
-     -H "X-API-Key: your-secure-api-key" \
-     -H "Content-Type: application/json" \
-     -d '{
-           "protocol": "http",
-           "ip": "192.168.1.100",
-           "port": 8080,
-           "username": "user",
-           "password": "pass"
-         }'
-```
 
-2. **Get Available Proxies**
-```bash
-curl -X GET "http://localhost:8000/get_proxies?count=2" \
-     -H "X-API-Key: your-secure-api-key"
-```
+
 
 ## 🐳 **Docker Deployment**
 
@@ -134,43 +201,7 @@ docker run -d \
   fastapi-proxy-api
 ```
 
-## 🔌 **Integration with Other Projects**
 
-### Local Development Installation
-
-You can install this package directly from your local copy for development:
-
-```bash
-# From your other project's directory
-pip install -e path/to/fastapi-proxy-api
-
-# Example
-pip install -e ../fastapi-proxy-api
-```
-
-### Usage in Your Project
-
-```python
-from proxy_api import ProxyAPI
-
-# Initialize the API client
-proxy_api = ProxyAPI(
-    api_key="your-secure-api-key",  # Optional: defaults to environment variable
-    base_url="http://localhost:8000"  # Optional: defaults to this value
-)
-
-# Get a proxy
-response = proxy_api.get_proxies(count=1)
-proxy = response["proxies"][0]["proxy"]
-
-# Use the proxy in your requests
-import requests
-proxies = {
-    "http": proxy,
-    "https": proxy
-}
-response = requests.get("https://example.com", proxies=proxies)
-```
 
 ## 🎯 **API Documentation**
 
@@ -243,72 +274,27 @@ async def shutdown_event():
    - Hourly proxy testing
    - Automatic status updates
 
-### Example Usage Scenarios
 
-1. **Basic Proxy Retrieval**
-```python
-from proxy_api import ProxyAPI
+### Using the API
 
-api = ProxyAPI()
-
-# Get a single proxy
-proxy = api.get_proxies(count=1)
-print(proxy["proxies"][0]["proxy"])
-# Output: http://user:pass@192.168.1.100:8080
-
-# Use the proxy
-import requests
-response = requests.get("https://example.com", proxies={
-    "http": proxy["proxies"][0]["proxy"],
-    "https": proxy["proxies"][0]["proxy"]
-})
+1. **Add a Proxy**
+```bash
+curl -X POST "http://localhost:8000/add_proxy" \
+     -H "X-API-Key: your-secure-api-key" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "protocol": "http",
+           "ip": "192.168.1.100",
+           "port": 8080,
+           "username": "user",
+           "password": "pass"
+         }'
 ```
 
-2. **Adding and Testing Proxies**
-```python
-# Add a new proxy
-api.add_proxy(
-    protocol="http",
-    ip="192.168.1.100",
-    port=8080,
-    username="user",
-    password="pass"
-)
-
-# Test a specific proxy
-test_result = api.test_proxy(1)
-print(test_result["message"])
-# Output: "Proxy is working" or "Proxy failed"
-```
-
-3. **Managing Proxy Locks**
-```python
-# Get multiple proxies
-proxies = api.get_proxies(count=3)
-proxy_ids = [p["id"] for p in proxies["proxies"]]
-
-# Use proxies...
-
-# Unlock when done
-api.unlock_proxies(proxy_ids)
-```
-
-### Error Handling
-
-The API includes comprehensive error handling:
-
-```python
-try:
-    proxies = api.get_proxies(count=5)
-except requests.exceptions.HTTPError as e:
-    if e.response.status_code == 404:
-        print("No available proxies")
-    elif e.response.status_code == 403:
-        print("Invalid API key")
-    else:
-        print(f"HTTP Error: {e}")
-except requests.exceptions.RequestException as e:
-    print(f"Connection error: {e}")
+2. **Get Available Proxies**
+```bash
+curl -X GET "http://localhost:8000/get_proxies?count=2" \
+     -H "X-API-Key: your-secure-api-key"
 ```
 
 ## 🔒 **Security Best Practices**
