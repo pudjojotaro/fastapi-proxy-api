@@ -75,8 +75,22 @@ def convert_proxies(file_path="proxies.txt"):
         for line in f:
             proxy = parse_proxy(line.strip())
             if proxy:
-                insert_proxy(proxy)
+                if not proxy_exists(proxy):
+                    insert_proxy(proxy)
+                else:
+                    logger.info(f"Proxy already exists: {proxy['protocol']}://{proxy.get('username', '')}:{proxy.get('password', '')}@{proxy['ip']}:{proxy['port']}")
     logger.info("Proxy conversion completed.")
+
+def proxy_exists(proxy):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT COUNT(*) FROM proxies
+        WHERE ip = ? AND port = ? AND protocol = ?
+    ''', (proxy['ip'], proxy['port'], proxy['protocol']))
+    exists = cursor.fetchone()[0] > 0
+    conn.close()
+    return exists
 
 if __name__ == "__main__":
     init_db()
