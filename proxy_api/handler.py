@@ -8,7 +8,7 @@ import logging
 import os
 from dotenv import load_dotenv
 from proxy_api.api import ProxyAPI
-from proxy_api.proxy_converter import init_db, convert_proxies
+from proxy_api.proxy_converter import init_db, convert_proxies, get_all_available_proxies
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -238,26 +238,21 @@ async def check_proxies():
         
         await asyncio.sleep(3600)  # Run every 1 hour
 
-# Function to get all available proxies
-def get_all_available_proxies():
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM proxies WHERE status = 'available'")
-    available_proxies = cursor.fetchall()
-    conn.close()
-    return available_proxies
+
 
 # New endpoint to retrieve all available proxies
 @app.get("/available_proxies", response_model=List[dict])
-def available_proxies():
+def available_proxies(auto_lock: bool = True):
     proxies = get_all_available_proxies()
     if not proxies:
         raise HTTPException(status_code=404, detail="No available proxies found.")
     
-    # Format the response and lock the proxies
+    # Format the response
     formatted_proxies = []
+    proxy_ids = []
     for proxy in proxies:
         proxy_id = proxy[0]
+        proxy_ids.append(proxy_id)
         formatted_proxy = {
             "id": proxy_id,
             "protocol": proxy[1],
@@ -270,7 +265,9 @@ def available_proxies():
             "fail_count": proxy[8]
         }
         formatted_proxies.append(formatted_proxy)
-        # Lock each proxy as it's retrieved
-        update_proxy_status(proxy_id, "locked")
+        # Lock proxies if auto_lock is True
+        if auto_lock:
+            update_proxy_status(proxy_id, "locked")
+    
     
     return formatted_proxies

@@ -99,19 +99,20 @@ class ProxyAPI:
         # Lock all retrieved proxies
         proxy_ids = [proxy["id"] for proxy in proxies]
         if proxy_ids:
-            self.lock_proxies(proxy_ids)
-        
+            for proxy_id in proxy_ids:
+                self.change_proxy_status(proxy_id, "locked")
         return proxies
 
-    def lock_proxies(self, proxy_ids: List[int]):
-        """Lock specific proxies"""
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        for proxy_id in proxy_ids:
-            cursor.execute('''
-                UPDATE proxies
-                SET status = 'locked'
-                WHERE id = ?
-            ''', (proxy_id,))
-        conn.commit()
-        conn.close()
+
+
+    def get_all_available_proxies(self, auto_lock: bool = True) -> list:
+        """Get all available proxies with option to auto-lock them"""
+        url = f"{self.base_url}/available_proxies"
+        params = {"auto_lock": auto_lock}
+        response = requests.get(url, headers=self.headers, params=params)
+        if response.status_code == 404:
+            return []
+        response.raise_for_status()
+        return response.json()
+
+    # Remove the lock_proxies method since it's now handled by the server
