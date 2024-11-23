@@ -89,7 +89,7 @@ async def unlock_proxies_endpoint(proxy_ids: List[int]):
     logger.info(f"Unlocked proxies: {proxy_ids}")
     return {"message": "Proxies unlocked successfully"}
 
-@app.get("/available_proxies", response_model=List[dict])
+@app.get("/available_proxies", dependencies=[Depends(verify_api_key)], response_model=List[dict])
 async def available_proxies(auto_lock: bool = True):
     proxies = get_all_available_proxies()
     if not proxies:
@@ -121,7 +121,7 @@ async def available_proxies(auto_lock: bool = True):
     
     return formatted_proxies
 
-@app.get("/health")
+@app.get("/health", dependencies=[Depends(verify_api_key)])
 async def health_check():
     return {"status": "healthy"}
 
