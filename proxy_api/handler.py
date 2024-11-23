@@ -254,10 +254,12 @@ def available_proxies():
     if not proxies:
         raise HTTPException(status_code=404, detail="No available proxies found.")
     
-    # Format the response
-    formatted_proxies = [
-        {
-            "id": proxy[0],
+    # Format the response and lock the proxies
+    formatted_proxies = []
+    for proxy in proxies:
+        proxy_id = proxy[0]
+        formatted_proxy = {
+            "id": proxy_id,
             "protocol": proxy[1],
             "username": proxy[2],
             "password": proxy[3],
@@ -267,7 +269,8 @@ def available_proxies():
             "last_tested": proxy[7],
             "fail_count": proxy[8]
         }
-        for proxy in proxies
-    ]
+        formatted_proxies.append(formatted_proxy)
+        # Lock each proxy as it's retrieved
+        update_proxy_status(proxy_id, "locked")
     
     return formatted_proxies

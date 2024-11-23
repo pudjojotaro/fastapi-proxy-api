@@ -86,3 +86,32 @@ class ProxyAPI:
         url = f"{self.base_url}/health"
         response = requests.get(url)
         return response.json()
+
+    def get_all_available_proxies(self) -> list:
+        """Get all available proxies and lock them"""
+        url = f"{self.base_url}/available_proxies"
+        response = requests.get(url, headers=self.headers)
+        if response.status_code == 404:
+            return []
+        response.raise_for_status()
+        proxies = response.json()
+        
+        # Lock all retrieved proxies
+        proxy_ids = [proxy["id"] for proxy in proxies]
+        if proxy_ids:
+            self.lock_proxies(proxy_ids)
+        
+        return proxies
+
+    def lock_proxies(self, proxy_ids: List[int]):
+        """Lock specific proxies"""
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        for proxy_id in proxy_ids:
+            cursor.execute('''
+                UPDATE proxies
+                SET status = 'locked'
+                WHERE id = ?
+            ''', (proxy_id,))
+        conn.commit()
+        conn.close()
