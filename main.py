@@ -1,8 +1,5 @@
 from fastapi import FastAPI
-from proxy_api.handler import setup_routes
-
-app = FastAPI()
-setup_routes(app)
+from proxy_api.handler import app
 
 if __name__ == "__main__":
     import uvicorn

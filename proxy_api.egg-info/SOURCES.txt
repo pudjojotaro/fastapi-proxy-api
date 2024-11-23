@@ -2,9 +2,12 @@ README.md
 setup.py
 proxy_api/__init__.py
 proxy_api/api.py
+proxy_api/background.py
 proxy_api/cli.py
+proxy_api/database.py
 proxy_api/handler.py
 proxy_api/proxy_converter.py
+proxy_api/utils.py
 proxy_api.egg-info/PKG-INFO
 proxy_api.egg-info/SOURCES.txt
 proxy_api.egg-info/dependency_links.txt
