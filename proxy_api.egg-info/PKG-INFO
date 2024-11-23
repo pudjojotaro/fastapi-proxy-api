@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: proxy_api
-Version: 0.1.2
+Version: 0.1.3
 Requires-Python: >=3.7
 Requires-Dist: requests
 Requires-Dist: fastapi

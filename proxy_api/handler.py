@@ -8,7 +8,7 @@ import logging
 import os
 from dotenv import load_dotenv
 from proxy_api.api import ProxyAPI
-from proxy_api.proxy_converter import init_db, convert_proxies, get_all_available_proxies
+from proxy_api.proxy_converter import init_db, convert_proxies
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -238,11 +238,28 @@ async def check_proxies():
         
         await asyncio.sleep(3600)  # Run every 1 hour
 
+# Add this function to handler.py
+def get_all_available_proxies():
+    """Get all available proxies from the database"""
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            SELECT * FROM proxies 
+            WHERE status = 'available'
+        ''')
+        available_proxies = cursor.fetchall()
+        return available_proxies
+    except Exception as e:
+        logger.error(f"Error getting available proxies: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get available proxies")
+    finally:
+        conn.close()
 
-
-# New endpoint to retrieve all available proxies
+# Update the existing endpoint
 @app.get("/available_proxies", response_model=List[dict])
 def available_proxies(auto_lock: bool = True):
+    """Get all available proxies with option to auto-lock them"""
     proxies = get_all_available_proxies()
     if not proxies:
         raise HTTPException(status_code=404, detail="No available proxies found.")
@@ -271,3 +288,118 @@ def available_proxies(auto_lock: bool = True):
     
     
     return formatted_proxies
+
+def setup_routes(app: FastAPI):
+    """Set up all routes for the FastAPI application"""
+    
+    @app.post("/add_proxy", dependencies=[Depends(verify_api_key)])
+    def add_proxy(
+        protocol: str,
+        ip: str,
+        port: int,
+        username: Optional[str] = None,
+        password: Optional[str] = None
+    ):
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                INSERT INTO proxies (protocol, username, password, ip, port)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (protocol, username, password, ip, port))
+            conn.commit()
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=400, detail="Proxy already exists")
+        finally:
+            conn.close()
+        logger.info(f"Added proxy: {protocol}://{username}:{password}@{ip}:{port}")
+        return {"message": "Proxy added successfully"}
+
+    @app.get("/test_proxy/{proxy_id}", dependencies=[Depends(verify_api_key)])
+    def test_proxy(proxy_id: int):
+        proxy = get_proxy_by_id(proxy_id)
+        if not proxy:
+            raise HTTPException(status_code=404, detail="Proxy not found")
+        
+        proxy_url = construct_proxy_url(proxy)
+        try:
+            import requests
+            response = requests.get(
+                "https://httpbin.org/ip",
+                proxies={"http": proxy_url, "https": proxy_url},
+                timeout=5
+            )
+            response.raise_for_status()
+            update_proxy_status(proxy_id, "available")
+            logger.info(f"Proxy {proxy_id} is working")
+            return {"message": "Proxy is working"}
+        except Exception as e:
+            update_proxy_status(proxy_id, "inactive")
+            logger.warning(f"Proxy {proxy_id} failed: {e}")
+            return {"message": "Proxy failed"}
+
+    @app.get("/get_proxies", dependencies=[Depends(verify_api_key)])
+    def get_proxies(count: int = 1):
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT * FROM proxies
+            WHERE status = 'available'
+            LIMIT ?
+        ''', (count,))
+        results = cursor.fetchall()
+        conn.close()
+        
+        if not results:
+            raise HTTPException(status_code=404, detail="No available proxies")
+        
+        proxies = []
+        for proxy in results:
+            proxy_id = proxy[0]
+            constructed_proxy = construct_proxy_url(proxy)
+            proxies.append({"id": proxy_id, "proxy": constructed_proxy})
+            update_proxy_status(proxy_id, "locked")
+        
+        return {"proxies": proxies}
+
+    @app.get("/available_proxies", response_model=List[dict])
+    def available_proxies(auto_lock: bool = True):
+        """Get all available proxies with option to auto-lock them"""
+        proxies = get_all_available_proxies()
+        if not proxies:
+            raise HTTPException(status_code=404, detail="No available proxies found.")
+        
+        # Format the response
+        formatted_proxies = []
+        proxy_ids = []
+        for proxy in proxies:
+            proxy_id = proxy[0]
+            proxy_ids.append(proxy_id)
+            formatted_proxy = {
+                "id": proxy_id,
+                "protocol": proxy[1],
+                "username": proxy[2],
+                "password": proxy[3],
+                "ip": proxy[4],
+                "port": proxy[5],
+                "status": proxy[6],
+                "last_tested": proxy[7],
+                "fail_count": proxy[8]
+            }
+            formatted_proxies.append(formatted_proxy)
+            # Lock proxies if auto_lock is True
+            if auto_lock:
+                update_proxy_status(proxy_id, "locked")
+        
+        
+        return formatted_proxies
+
+    @app.on_event("startup")
+    async def startup_event():
+        init_db()
+        convert_proxies()
+        unlock_all_proxies()
+
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        unlock_all_proxies()
