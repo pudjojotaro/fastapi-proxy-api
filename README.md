@@ -12,6 +12,7 @@ A lightweight FastAPI application designed to manage proxies locally. This proje
 - **Centralized Management**: Manage all proxy configurations in one place.
 - **Dynamic Proxy Pool**: Add, remove, and modify proxies on the fly.
 - **Automatic Health Checks**: Background monitoring of proxy availability.
+- **Automatic Proxy Refresh**: Daily cleanup of unused proxies and repopulation from proxies.txt.
 - **Lock/Unlock System**: Prevent conflicts between applications.
 - **RESTful API**: Simple HTTP interface for proxy management.
 - **CLI Support**: Command-line interface for quick management tasks.
@@ -328,11 +329,38 @@ async def shutdown_event():
 
 ## 🛠️ Advanced Configuration
 
-### Custom Health Checks
-The API performs health checks every hour. To modify the interval, update the `check_proxies()` function in `handler.py`:
+### Automatic Proxy Refresh
+The API performs automatic proxy refresh in two scenarios:
+1. On startup: Clears unused proxies and repopulates from proxies.txt
+2. Every 24 hours: Performs the same refresh operation periodically
+
+To modify the refresh interval, update the `periodic_refresh()` function in `background_tasks.py`:
 
 ```python
-await asyncio.sleep(3600)  # Modify this value (in seconds)
+# Change the sleep duration (in seconds)
+await asyncio.sleep(24 * 60 * 60)  # Default: 24 hours
+```
+
+You can also trigger a manual refresh using the API or CLI:
+
+```bash
+# Using curl
+curl -X POST "http://localhost:8000/refresh_proxies" \
+     -H "X-API-Key: your-secure-api-key"
+
+# Using CLI
+proxy-cli refresh
+```
+
+### Example Usage with Refresh
+```python
+from proxy_api import ProxyAPI
+
+proxy_api = ProxyAPI(api_key="your-secure-api-key")
+
+# Manually trigger a refresh
+refresh_result = proxy_api.refresh_proxies()
+print(f"Cleared {refresh_result['cleared_count']} unused proxies")
 ```
 
 ### Database Configuration
