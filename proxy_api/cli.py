@@ -36,5 +36,11 @@ def start():
     """Start the proxy server"""
     os.system("uvicorn handler:app --host 0.0.0.0 --port 8000")
 
+@app.command()
+def refresh():
+    """Clear unused proxies and repopulate from proxies.txt"""
+    result = api.refresh_proxies()
+    typer.echo(result)
+
 if __name__ == "__main__":
     app() 

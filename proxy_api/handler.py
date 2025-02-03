@@ -8,7 +8,7 @@ from .database import (
     init_db, get_proxy_by_id, update_proxy_status,
     get_all_available_proxies, add_proxy_to_db
 )
-from .utils import construct_proxy_url, unlock_all_proxies
+from .utils import construct_proxy_url, unlock_all_proxies, clear_and_repopulate_db
 from .background import check_proxies
 from .proxy_converter import convert_proxies
 
@@ -124,6 +124,19 @@ async def available_proxies(auto_lock: bool = True):
 @app.get("/health", dependencies=[Depends(verify_api_key)])
 async def health_check():
     return {"status": "healthy"}
+
+@app.post("/refresh_proxies", dependencies=[Depends(verify_api_key)])
+async def refresh_proxies():
+    """Clear unused proxies and repopulate from proxies.txt"""
+    try:
+        cleared_count = clear_and_repopulate_db()
+        return {
+            "message": "Successfully refreshed proxy database",
+            "cleared_count": cleared_count
+        }
+    except Exception as e:
+        logger.error(f"Error refreshing proxies: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Startup and shutdown events
 @app.on_event("startup")

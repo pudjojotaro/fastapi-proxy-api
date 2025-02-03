@@ -85,3 +85,22 @@ def add_proxy_to_db(protocol: str, ip: str, port: int, username: Optional[str], 
         raise HTTPException(status_code=400, detail="Proxy already exists")
     finally:
         conn.close()
+
+def clear_unused_proxies() -> int:
+    """Clear all proxies that are not locked and return count of deleted entries"""
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            DELETE FROM proxies 
+            WHERE status != 'locked'
+        ''')
+        deleted_count = cursor.rowcount
+        conn.commit()
+        logger.info(f"Cleared {deleted_count} unused proxies from database")
+        return deleted_count
+    except Exception as e:
+        logger.error(f"Error clearing unused proxies: {e}")
+        raise HTTPException(status_code=500, detail="Failed to clear unused proxies")
+    finally:
+        conn.close()

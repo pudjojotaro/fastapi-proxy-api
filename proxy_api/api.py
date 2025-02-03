@@ -96,3 +96,9 @@ class ProxyAPI:
             return []
         response.raise_for_status()
         return response.json()
+
+    def refresh_proxies(self) -> dict:
+        """Clear unused proxies and repopulate from proxies.txt"""
+        url = f"{self.base_url}/refresh_proxies"
+        response = requests.post(url, headers=self.headers)
+        return response.json()
