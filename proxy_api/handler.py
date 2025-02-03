@@ -11,6 +11,8 @@ from .database import (
 from .utils import construct_proxy_url, unlock_all_proxies, clear_and_repopulate_db
 from .background import check_proxies
 from .proxy_converter import convert_proxies
+from .background_tasks import periodic_refresh
+import asyncio
 
 # Initialize logging and load environment variables
 load_dotenv()
@@ -141,6 +143,15 @@ async def refresh_proxies():
 # Startup and shutdown events
 @app.on_event("startup")
 async def startup_event():
+    """Initialize background tasks on startup"""
+    # Perform initial refresh
+    try:
+        clear_and_repopulate_db()
+    except Exception as e:
+        logger.error(f"Initial refresh failed: {e}")
+    
+    # Start periodic refresh task
+    asyncio.create_task(periodic_refresh())
     init_db()
     convert_proxies()
     unlock_all_proxies()
